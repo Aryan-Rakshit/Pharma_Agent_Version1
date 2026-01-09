@@ -17,7 +17,7 @@ class ResulFormatter:
              
         # Build structured fields
         output = f"""
-**{study.title}**
+### Title: {study.title}
 {study.summary} {citation}
 
 - **Identifier**: {study.id} ([Link]({study.url})) {citation}

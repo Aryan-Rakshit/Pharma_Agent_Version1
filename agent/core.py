@@ -33,13 +33,18 @@ class PharmaAgent:
         """
         Main entry point.
         """
-        # 1. Fetch raw data in parallel
+        # 0. Smart Query Extraction
+        print(f"Original Query: {query}")
+        optimized_query = self._extract_keywords(query)
+        print(f"Optimized Search Keywords: {optimized_query}\n")
+        
+        # 1. Fetch raw data in parallel using optimized query
         raw_results = []
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = [
-                executor.submit(self.ct_api.search, query, limit=5),
-                executor.submit(self.pubmed_api.search, query, limit=3), # Keep limits low for demo speed
-                executor.submit(self.nejm_api.search, query, limit=2)
+                executor.submit(self.ct_api.search, optimized_query, limit=5),
+                executor.submit(self.pubmed_api.search, optimized_query, limit=3), # Keep limits low for demo speed
+                executor.submit(self.nejm_api.search, optimized_query, limit=2)
             ]
             for future in as_completed(futures):
                 raw_results.extend(future.result())
@@ -71,6 +76,40 @@ class PharmaAgent:
             output_parts.append("---") # Separator
             
         return "\n\n".join(output_parts)
+
+    def _extract_keywords(self, user_query: str) -> str:
+        """
+        Extracts search-optimized keywords from a natural language query using LLM.
+        """
+        try:
+            prompt = f"""
+            You are a helpful research assistant. Convert the following natural language query into a simple, effective keyword string for a medical database search (ClinicalTrials.gov, PubMed).
+            
+            Rules:
+            - Remove stop words (do you have, show me, find, etc.).
+            - Focus on: Drug names, Conditions, Mechanisms, Gene targets.
+            - OUTPUT ONLY THE KEYWORDS. No quotes, no explanations.
+            
+            User Query: "{user_query}"
+            """
+            
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logging.warning(f"Keyword extraction failed: {e}")
+            return user_query # Fallback to original
+
+
+
+    def _ensure_string(self, value) -> str:
+        """Helper to handle list/string polymorphism from LLM extraction"""
+        if isinstance(value, list):
+            return ", ".join(str(v) for v in value)
+        return str(value) if value else "Not reported"
 
     def _analyze_study(self, raw_data: dict, query: str) -> Study:
         """
@@ -143,19 +182,19 @@ class PharmaAgent:
                 
                 # Priority: raw_data > LLM extraction > None
                 # CT.gov provides enrollment natively; PubMed requires extraction
-                enrollment=str(raw_data.get("enrollment")) if raw_data.get("enrollment") else extracted.get("enrollment", "Not reported"),
+                enrollment=str(raw_data.get("enrollment")) if raw_data.get("enrollment") else self._ensure_string(extracted.get("enrollment")),
                 
                 # LLM Extracted fields
-                summary=extracted.get("summary", "No summary available"),
-                demographics=extracted.get("demographics", "Not reported"),
-                exposure=extracted.get("exposure", "Not reported"),
-                endpoints=extracted.get("endpoints", "Not reported"),
-                biomarkers=extracted.get("biomarkers", "Not reported"),
-                protein_data=extracted.get("protein_data", "Not reported"),
-                biology_note=extracted.get("biology_note"),
-                adverse_events=extracted.get("adverse_events", "Not reported"),
-                unexpected_aes=extracted.get("unexpected_aes", "None identified"),
-                next_steps=extracted.get("next_steps", "Review full paper"),
+                summary=self._ensure_string(extracted.get("summary", "No summary available")),
+                demographics=self._ensure_string(extracted.get("demographics")),
+                exposure=self._ensure_string(extracted.get("exposure")),
+                endpoints=self._ensure_string(extracted.get("endpoints")),
+                biomarkers=self._ensure_string(extracted.get("biomarkers")),
+                protein_data=self._ensure_string(extracted.get("protein_data")),
+                biology_note=self._ensure_string(extracted.get("biology_note")),
+                adverse_events=self._ensure_string(extracted.get("adverse_events")),
+                unexpected_aes=self._ensure_string(extracted.get("unexpected_aes")),
+                next_steps=self._ensure_string(extracted.get("next_steps")),
                 
                 # Publications: Use raw PMIDs from CT.gov if available, else could check extracted
                 publications=raw_data.get("publications", []),
