@@ -13,7 +13,7 @@ class ClinicalTrialsAPI(BaseDataSource):
         params = {
             "query.term": query,
             "pageSize": limit,
-            "fields": "NCTId,BriefTitle,OfficialTitle,Phase,Condition,InterventionName,StudyType,LeadSponsorName,BriefSummary,EnrollmentCount,EligibilityCriteria,OutcomeMeasure,EventGroup,ReferencesModule"
+            "fields": "NCTId,BriefTitle,OfficialTitle,Phase,Condition,InterventionName,StudyType,LeadSponsorName,BriefSummary,EnrollmentCount,EligibilityCriteria,OutcomeMeasure,EventGroup,ReferencesModule,StdAge,MinimumAge,MaximumAge,Sex"
         }
         
         try:
@@ -59,6 +59,9 @@ class ClinicalTrialsAPI(BaseDataSource):
                     "interventions": [i.get('name') for i in protocol.get('armsInterventionsModule', {}).get('interventions', [])],
                     "summary": protocol.get('descriptionModule', {}).get('briefSummary'),
                     "eligibility_criteria": eligibility.get('eligibilityCriteria'),
+                    "ages": eligibility.get('stdAges', []),
+                    "age_range": f"{eligibility.get('minimumAge', 'N/A')} - {eligibility.get('maximumAge', 'N/A')}",
+                    "sex": eligibility.get('sex', 'All'),
                     "primary_outcomes": [o.get('measure') for o in outcomes.get('primaryOutcomes', [])],
                     "publications": pmids,
                     # Adverse events are in a separate module often not populated in simple view, 

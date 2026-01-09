@@ -45,14 +45,14 @@ st.markdown("""
 
 # Initialize Agent
 @st.cache_resource
-def get_agent():
+def get_agent_reverted():
     try:
         return PharmaAgent()
     except Exception as e:
         st.error(f"Failed to initialize agent: {e}")
         return None
 
-agent = get_agent()
+agent = get_agent_reverted()
 
 query = st.text_input("Enter your research question (e.g., 'NSCLC KRAS G12C inhibitors biomarkers'):")
 search_button = st.button("Search & Analyze")

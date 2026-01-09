@@ -128,6 +128,9 @@ class PharmaAgent:
                     "intervention": raw_data.get("interventions"),
                     "summary": raw_data.get("summary"),
                     "criteria": raw_data.get("eligibility_criteria"),
+                    "ages": raw_data.get("ages"),
+                    "age_range": raw_data.get("age_range"),
+                    "sex": raw_data.get("sex"),
                     "outcomes": raw_data.get("primary_outcomes")
                 }, indent=2)
             else: # PubMed / NEJM
