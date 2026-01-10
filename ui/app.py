@@ -2,6 +2,14 @@ import streamlit as st
 import sys
 import os
 
+# Try to load API Key from Streamlit Secrets (for Cloud Deployment)
+try:
+    if "OPENAI_API_KEY" in st.secrets:
+        os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+except:
+    # Ignore if secrets file doesn't exist (local dev)
+    pass
+
 # Add parent dir to path so we can import 'agent'
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
