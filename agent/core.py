@@ -69,13 +69,51 @@ class PharmaAgent:
         # 4. Sort by score
         processed_studies.sort(key=lambda x: x.relevance_score, reverse=True)
         
-        # 5. Format
-        output_parts = []
-        for study in processed_studies:
-            output_parts.append(self.formatter.format_study(study))
-            output_parts.append("---") # Separator
+        return processed_studies
+
+    def answer_question(self, studies: List[Study], question: str) -> str:
+        """
+        Answers a user question based on the context of the provided studies.
+        """
+        try:
+            # Build Context String
+            context_parts = []
+            for i, study in enumerate(studies, 1):
+                context_parts.append(f"Study {i}: {study.title} ({study.source})")
+                context_parts.append(f"Summary: {study.summary}")
+                context_parts.append(f"Biomarkers: {study.biomarkers}")
+                context_parts.append(f"Adverse Events: {study.adverse_events}")
+                context_parts.append(f"Demographics: {study.demographics}")
+                context_parts.append(f"Enrollment: {study.enrollment}")
+                context_parts.append(f"Relevance Score: {study.relevance_score}")
+                context_parts.append("---")
             
-        return "\n\n".join(output_parts)
+            context_str = "\n".join(context_parts)
+            print("--- DEBUG CHAT CONTEXT ---\n" + context_str + "\n--------------------------")
+            
+            prompt = f"""
+            You are a research assistant answering questions about a specific set of clinical studies found by the user.
+            
+            User Question: "{question}"
+            
+            Available Study Context:
+            {context_str[:15000]} # Limit context
+            
+             Instructions:
+            - Answer strictly based on the provided studies.
+            - The context includes fields for 'Enrollment', 'Relevance Score', 'Biomarkers', etc. USE THEM.
+            - If the answer isn't in the studies, say "The provided studies do not mention this."
+            - Cite specific studies (e.g., "Study 1 mentions...") when applicable.
+            """
+            
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"Error generating answer: {e}"
 
     def _extract_keywords(self, user_query: str) -> str:
         """
