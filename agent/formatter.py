@@ -17,22 +17,23 @@ class ResulFormatter:
              
         # Build structured fields
         output = f"""
-### Title: {study.title}
 {study.summary} {citation}
 
 - **Identifier**: {study.id} ([Link]({study.url})) {citation}
-- **Type**: {study.study_type or 'Not specified'} {study.phase or ''}
+- **Title**: {study.title}
+- **Study type**: {study.study_type or 'Not specified'} {study.phase or ''}
 - **Enrollment**: {study.enrollment or 'Not reported'}
 - **Demographics**: {study.demographics}
 - **Exposure**: {study.exposure}
 - **Endpoints**: {study.endpoints}
-- **Biomarkers**: {study.biomarkers} / {study.protein_data}
+- **Biomarkers / Protein**: {study.biomarkers} / {study.protein_data}
 - **Biology Note**: {study.biology_note or 'Not reported'}
 - **Adverse Events**: {study.adverse_events}
   - *Unexpected Non-Serious*: {study.unexpected_aes}
 - **Publications**: {", ".join(study.publications) if study.publications else "None listed"}
+- **Source citations**: {citation}
 
-*Relevance Score*: {study.relevance_score}/100 ({study.score_justification})
+*Relevance Score*: {study.relevance_score}/100 — {study.score_justification}
 *Next Steps*: {study.next_steps}
 """
         return output.strip()

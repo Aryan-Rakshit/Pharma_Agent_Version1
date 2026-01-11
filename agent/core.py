@@ -175,35 +175,40 @@ class PharmaAgent:
                 text_content = f"Title: {title}\nAbstract: {raw_data.get('abstract')}\nJournal: {raw_data.get('journal')}"
 
             prompt = f"""
-            You are an expert Pharma Discovery Data Scientist. Analyze this study/article for the query: "{query}".
+            You are an Expert Pharma Discovery Data Scientist with deep experience in clinical trial interpretation, biomarkers, and translational biology.
             
-            Extract the following fields strictly based on the text provided. Do NOT hallucinate.
-            If a value is not found, use "Not reported".
+            Task: Analyze this study/article for the query: "{query}".
             
-            Required Output JSON format:
+            # Instructions
+            - Act as a concise, evidence-first research assistant.
+            - Extract key fields strictly based on the text provided.
+            - Do NOT hallucinate. If a value is not found, use "Not reported in specified sources".
+            - CITATIONS: You must include source citations for every factual claim.
+            
+            # Required Output JSON format:
             {{
-                "summary": "1-2 sentence evidence-first summary",
-                "enrollment": "Number of participants/subjects if mentioned",
-                "demographics": "Age, sex, N=...",
-                "exposure": "Dose, duration, etc.",
-                "endpoints": "Primary endpoints, results if any",
-                "biomarkers": "List biomarkers mentioned or 'Not reported'",
-                "protein_data": "Protein expression data or 'Not reported'",
-                "biology_note": "1-2 lines on mechanism/biology",
-                "adverse_events": "List Aes or 'Not reported'",
+                "summary": "1-2 sentence evidence-first brief summary.",
+                "enrollment": "Number of patients (e.g. '120 [ClinicalTrials.gov:NCT...]')",
+                "demographics": "Age, sex, key criteria affecting population (with citation)",
+                "exposure": "Compound, dose, schedule details (with citation)",
+                "endpoints": "Primary/key secondary endpoints (with citation)",
+                "biomarkers": "Reported biomarker names, assay type, protein expression, sample source (tumor/blood) (with citation)",
+                "protein_data": "Quantitative values or thresholds if reported",
+                "biology_note": "1-2 lines linking biomarker to mechanistic hypothesis (with citation)",
+                "adverse_events": "List of serious AEs and unexpected non-serious AEs (with citations)",
                 "unexpected_aes": "Any UNEXPECTED non-serious AEs? If none, say 'None identified'",
                 "has_biomarker_match": boolean (true if relevant biomarkers found),
                 "has_unexpected_ae": boolean (true if unexpected non-serious AE found),
-                "missing_data_penalty": boolean (true if critical biomarker/AE data is explicitly missing vs just not in abstract),
-                "next_steps": "One clear recommendation for next steps"
+                "missing_data_penalty": boolean (true if critical biomarker/AE data is explicitly missing),
+                "next_steps": "One clear recommendation (e.g. 'Request full text from NEJM', 'Obtain AACT export')"
             }}
             
             Data to Analyze:
-            {text_content[:6000]} # Truncate to avoid limit
+            {text_content[:8000]} 
             """
 
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini", # Cost effective and standard
+                model="gpt-4o", # Upgraded to gpt-4o for better reasoning on medical text
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
                 temperature=0
