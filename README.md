@@ -1,6 +1,7 @@
 # Pharma Discovery Research Agent
 
 A Python-based AI agent to assist with pharma discovery research by analyzing ClinicalTrials.gov, PubMed, and NEJM data using OpenAI for reasoning.
+https://pharmadiscoveryagent.streamlit.app/
 
 ## Setup
 
